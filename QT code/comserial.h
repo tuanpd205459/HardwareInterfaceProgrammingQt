@@ -23,6 +23,8 @@ public:
     bool mySerial(QSerialPort *devSerial);
     void updateTemperature(QString sensor_reading);
 
+    void  sendDataToPort( double dataToSend, QString Str);
+
     qint64 Write(const char *cmd);
     QString Read();
     QString Read(int TamanhoBuffer);

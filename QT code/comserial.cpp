@@ -106,3 +106,29 @@ QString comserial::Read(int TamanhoBuffer)
 
 }
 
+
+void comserial::sendDataToPort( double dataToSend, QString Str){
+    if (devSerial->isOpen() && devSerial->isWritable()) {
+        // Đọc giá trị từ doubleSpinBox
+
+        double dataToSendPort =  dataToSend;
+
+         // Chuyển đổi giá trị sang QString
+                QString StrdataToSend = Str + QString::number(dataToSendPort);
+
+        // Chuyển đổi QString sang QByteArray
+        QByteArray ArrSendData = StrdataToSend.toUtf8();
+
+
+        // Gửi dữ liệu xuống Arduino
+        qint64 bytesWritten = devSerial->write(ArrSendData);
+        qDebug() << "Send Data: " << ArrSendData;
+
+        if (bytesWritten == -1) {
+            // Xử lý lỗi: Không gửi được dữ liệu
+            qDebug() << "Error writing data to serial port";
+        } else if (bytesWritten < ArrSendData.size()) {
+            // Xử lý lỗi: Chưa gửi được
+        }
+    }
+}

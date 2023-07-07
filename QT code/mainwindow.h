@@ -5,12 +5,6 @@
 #include "comserial.h"
 #include <QDebug>
 #include <QMainWindow>
-#include<QtCharts>
-#include<QChartView>
-#include<QLineSeries>
-#include<QTime>
-#include<QTimer>
-#include<QtCore>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -45,9 +39,7 @@ private slots:
 
     void on_pushButtonTurnOffSpeaker_clicked();
 
-    void on_pushButtonShowChart_clicked();
-    void updateChart();
-
+    void on_pushButtonSetTimeHatch_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -59,11 +51,7 @@ private:
         QString temperature_value;
         QString humidity_value;
 
-        QtCharts::QChartView *chartView;
-           QtCharts::QLineSeries *series;
-           QtCharts::QValueAxis *axisX;
-           QtCharts::QValueAxis *axisY;
-           QTimer *timer;
+
 
 
       void CarregarInfoDispSerial(void);

@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
+#include "comserial.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -263,59 +263,12 @@ void MainWindow::on_pushButtonTurnOffSpeaker_clicked()
 
 
 
-
-
-void MainWindow::on_pushButtonShowChart_clicked()
+void MainWindow::on_pushButtonSetTimeHatch_clicked()
 {
-    // Tạo một cửa sổ QMainWindow mới
-    QMainWindow *window = new QMainWindow();
-
-    chartView = new QtCharts::QChartView(this);
-        series = new QtCharts::QLineSeries(this);
-
-        // Create axes
-        axisX = new QtCharts::QValueAxis;
-        axisX->setRange(0, 10); // Set initial range for X-axis
-
-        axisY = new QtCharts::QValueAxis;
-        axisY->setRange(0, 100); // Set range for Y-axis
-
-        // Configure chart
-        QtCharts::QChart *chart = new QtCharts::QChart;
-        chart->addSeries(series);
-        chart->setTitle("Real-time Chart");
-        chart->setAnimationOptions(QtCharts::QChart::NoAnimation);
-        chart->createDefaultAxes();
-        chart->setAxisX(axisX, series);
-        chart->setAxisY(axisY, series);
-
-        // Set chart view properties
-        chartView->setRenderHint(QPainter::Antialiasing);
-        chartView->setChart(chart);
-
-        // Initialize timer
-        timer = new QTimer(this);
-        connect(timer, SIGNAL(timeout()), this, SLOT(updateChart()));
-        timer->start(1000); // Update chart every 1 second
-
-    // Đặt QChartView làm widget chính trong cửa sổ QMainWindow
-    window->setCentralWidget(chartView);
-
-    // Hiển thị cửa sổ
-    window->show();
-
+    procSerial->comserial::sendDataToPort(ui->spinBoxDayTimeHatch->value(),"dayTimeToHatch");
+    procSerial->comserial::sendDataToPort(ui->spinBoxHourTimeHatch->value(),"hourTimeToHatch");
+    procSerial->comserial::sendDataToPort(ui->spinBoxMinuteTimeHatch->value(),"minuteTimeToHatch");
 }
-void MainWindow::updateChart()
-{
-    // Convert the temperature_value to a float
-    double temperature = ui->lcdNumberTemperature->value();
-   // float temperature = temperature_value.toFloat();
 
-    // Append the temperature data to the series
-    series->append(QDateTime::currentMSecsSinceEpoch(), temperature);
 
-    // Update the X-axis range
-    qint64 currentTimestamp = QDateTime::currentMSecsSinceEpoch();
-    axisX->setRange(currentTimestamp - 10000, currentTimestamp); // Show the last 10 seconds of data (10,000 milliseconds)
-}
 
