@@ -263,12 +263,18 @@ void MainWindow::on_pushButtonTurnOffSpeaker_clicked()
 
 
 
-void MainWindow::on_pushButtonSetTimeHatch_clicked()
+
+void MainWindow::on_pushButtonStartHatch_clicked()
 {
     procSerial->comserial::sendDataToPort(ui->spinBoxDayTimeHatch->value(),"dayTimeToHatch");
     procSerial->comserial::sendDataToPort(ui->spinBoxHourTimeHatch->value(),"hourTimeToHatch");
     procSerial->comserial::sendDataToPort(ui->spinBoxMinuteTimeHatch->value(),"minuteTimeToHatch");
+    procSerial->comserial::sendDataToPort(1,"prState");
+
 }
 
+void MainWindow::on_pushButtonStopHatch_clicked()
+{
 
+}
 

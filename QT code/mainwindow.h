@@ -39,7 +39,9 @@ private slots:
 
     void on_pushButtonTurnOffSpeaker_clicked();
 
-    void on_pushButtonSetTimeHatch_clicked();
+    void on_pushButtonStartHatch_clicked();
+
+    void on_pushButtonStopHatch_clicked();
 
 private:
     Ui::MainWindow *ui;

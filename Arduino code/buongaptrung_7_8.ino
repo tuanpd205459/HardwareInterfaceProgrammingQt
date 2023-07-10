@@ -41,8 +41,8 @@ int intMinTimetoHatch;
 static uint8_t tempHatch;
 static float currentTemp; // currentTemp = dht.readTemperature();
 
-// Process state [0]: waiting, [1]: hatching, [2]: hatched, [3]: configuring
-static uint8_t prState = 3;
+// Process state [0]: waiting, [1]: hatching, [2]: hatched.
+static uint8_t prState = 0;
 
 #define millisWaiting   1000              // 1s
 #define millisHatching  1000              // 1s
@@ -91,6 +91,7 @@ void updateDisplayTemp(){
   if (prState == 3) lcd.print(tempHatch);
   else lcd.print((uint8_t)dht.readTemperature());
 }
+/*
 void Display(int prState){
     if (prState < 2 ){
     lcd.setCursor(3, 0);
@@ -137,16 +138,15 @@ void Display(int prState){
     lcd.print("|");
 }
 }
+*/
 
 void tempAdjusting(){
   currentTemp = dht.readTemperature();
-
   if (currentTemp >= tempHatch + 1) digitalWrite(redLed, LOW);
   else if (currentTemp <= tempHatch - 1) digitalWrite(redLed, HIGH);
 }
 int* receiveData() {
-  static int timeArray[3] = {0}; // Mảng để lưu trữ giá trị ngày, giờ và phút
-
+  static int timeArray[4] = {0}; // Mảng để lưu trữ giá trị ngày, giờ và phút va prState
   if (Serial.available()) {
     String data = Serial.readString();
   
@@ -154,21 +154,25 @@ int* receiveData() {
     int dayTimeIndex = data.indexOf("dayTimeToHatch") + 14;
     int hourTimeIndex = data.indexOf("hourTimeToHatch") + 15;
     int minuteTimeIndex = data.indexOf("minuteTimeToHatch") + 17;
-    
+    int prStateIndex = data.indexOf("prState") + 7;
+
     // Tách và lấy giá trị số từ chuỗi
-    String dayTimeString = data.substring(dayTimeIndex, hourTimeIndex - 1);
-    String hourTimeString = data.substring(hourTimeIndex, minuteTimeIndex - 1);
-    String minuteTimeString = data.substring(minuteTimeIndex);
-    
+    String dayTimeString = data.substring(dayTimeIndex, hourTimeIndex );
+    String hourTimeString = data.substring(hourTimeIndex, minuteTimeIndex);
+    String minuteTimeString = data.substring(minuteTimeIndex, prStateIndex );
+    String SprState = data.substring(prStateIndex);
+
     // Chuyển đổi giá trị số từ chuỗi sang kiểu int
     int dayTime = dayTimeString.toInt();
     int hourTime = hourTimeString.toInt();
     int minuteTime = minuteTimeString.toInt();
-    
+    int prState = SprState.toInt();
+
     // Lưu giá trị vào mảng và trả về con trỏ tới mảng
     timeArray[0] = dayTime;
     timeArray[1] = hourTime;
     timeArray[2] = minuteTime;
+    timeArray[3] = prState;
     return timeArray;
   }
   // Trả về con trỏ NULL nếu không có dữ liệu nhận được từ Serial
@@ -176,11 +180,7 @@ int* receiveData() {
 }
 
 
-void setTimeToHatch(int dayTime, int hourTime, int minuteTime){
 
-prState = 3; // configuring
-updateDisplayTimeToHatch(dayTime, hourTime, minuteTime);
-}
 
 void countDownToHatch(int prState, int day, int hour, int min) {
   unsigned long previousMillis = millis();
@@ -188,13 +188,13 @@ void countDownToHatch(int prState, int day, int hour, int min) {
 
   while (prState == 1) {
     unsigned long currentMillis = millis();
-    if (currentMillis % 2000 ==0) {
-    // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 5 giây
-    sendData_th();
-  }
+    if (currentMillis % 2000 == 0) {
+      // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 5 giây
+      sendData_th();
+    }
     if (currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
-      
+
       if (min == 0) {
         if (hour == 0) {
           if (day == 0) {
@@ -215,16 +215,15 @@ void countDownToHatch(int prState, int day, int hour, int min) {
       else {
         min--;
       }
-      
       // Cập nhật hiển thị trên LCD ở đây
       updateDisplayTimeToHatch(day, hour, min);
       updateDisplayTemp();
-      Display(prState);
+      //  Display(prState);
       tempAdjusting();
     }
-    
   }
 }
+
 
 void sendData_th(){
   float currentTemp = dht.readTemperature();
@@ -257,19 +256,29 @@ void setup() {
 void loop() {
 unsigned long currentMillis;
 sendData_th();
+
 if(Serial.available()){
+    String x = Serial.readString(); 
+
 int* receiveDataArray = receiveData();
   // Kiểm tra con trỏ có khác NULL hay không
+Serial.print("dayTime: ");
+Serial.println(receiveDataArray[0]);
+Serial.print("hourTime: ");
+Serial.println(receiveDataArray[1]);
+Serial.print("minuteTime: ");
+Serial.println(receiveDataArray[2]);
+Serial.print("prState: ");
+Serial.println(receiveDataArray[3]);
+
   if (receiveDataArray != NULL) {
-
-    // Thiết lập thời gian đến khi ấp trứng
-    setTimeToHatch(receiveDataArray[0], receiveDataArray[1], receiveDataArray[2]);
+    if(receiveDataArray[3] == 1){
     updateDisplayTimeToHatch(receiveDataArray[0], receiveDataArray[1], receiveDataArray[2]);
-
-  prState =1;
-    // Bắt đầu đếm ngược đến khi ấp trứng
-    countDownToHatch(prState, receiveDataArray[0], receiveDataArray[1], receiveDataArray[2]);
-  }
+    countDownToHatch(receiveDataArray[3], receiveDataArray[0], receiveDataArray[1], receiveDataArray[2]);
+ }
 }
-delay(500);
+}
+
+
+delay(5000);
 }

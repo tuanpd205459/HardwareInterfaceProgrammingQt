@@ -760,7 +760,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButtonSetTimeHatch">
+   <widget class="QPushButton" name="pushButtonStopHatch">
     <property name="geometry">
      <rect>
       <x>330</x>
