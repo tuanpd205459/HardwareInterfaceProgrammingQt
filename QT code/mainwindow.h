@@ -33,7 +33,7 @@ private slots:
   //  void sendData(QString data);
     void on_pushButtonTurnOn_clicked();
 
-    void on_pushButtonTurnOff_clicked();
+   void on_pushButtonTurnOff_clicked();
 
 
     void on_pushButtonTurnOffSpeaker_clicked();
@@ -43,6 +43,8 @@ private slots:
     void on_pushButtonStopHatch_clicked();
 
     void on_pushButtonContinue_clicked();
+
+    void on_pushButtonSetTemp_clicked();
 
 private:
     Ui::MainWindow *ui;

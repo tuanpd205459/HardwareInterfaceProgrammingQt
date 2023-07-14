@@ -21,10 +21,10 @@ static uint8_t hourTimeToHatch;
 static uint8_t minTimeToHatch;
 
 // Nhiệt độ ấp trứng
-static uint8_t tempHatch;
+static uint8_t setTemp = 20;
 static float currentTemp; // currentTemp = dht.readTemperature()
 
-// Trạng thái quá trình [0]: chờ, [1]: ấp, [2]: tiếp tục, [3]: đã nở.
+// Trạng thái quá trình [0]: chờ, [1]: ấp, [2]: tiếp tục, [3]: set time hatch.
 static uint8_t prState = 0;
 
 #define millisWaiting   1000    // 1 giây
@@ -63,7 +63,7 @@ void updateDisplayTemp(){
   lcd.print("Temp");
   lcd.setCursor(17, 3);
   if (prState == 3)
-    lcd.print(tempHatch);
+    lcd.print(setTemp);
   else
     lcd.print((uint8_t)dht.readTemperature());
 }
@@ -71,9 +71,9 @@ void updateDisplayTemp(){
 void tempAdjusting() {
   currentTemp = dht.readTemperature();
 
-  if (currentTemp >= tempHatch + 1) {
+  if (currentTemp >= setTemp + 1) {
     digitalWrite(redLed, LOW);
-  } else if (currentTemp <= tempHatch - 1) {
+  } else if (currentTemp <= setTemp - 1) {
     digitalWrite(redLed, HIGH);
   }
 }
@@ -89,56 +89,7 @@ void sendData_th() {
     Serial.println(currentHumidity);
   }
 }
-/*
-void countDownToHatch(int prState, int day, int hour, int min) {
-  unsigned long previousMillis = millis();
-  unsigned long interval = 1000; // Đơn vị milliseconds (1 giây)
- 
-  while (prState == 1 || prState ==2) {
-    if (Serial.available()) {
-      String inputState = Serial.readString();
-      int state = processInputState(inputState);
-      if (state == 0) {
-        break;
-      }
-    }
 
-    unsigned long currentMillis = millis();
-
-    if (currentMillis % 2000 == 0) {
-      // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 5 giây
-      sendData_th();
-    }
-
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-
-      if (min == 0) {
-        if (hour == 0) {
-          if (day == 0) {
-            prState = 2;
-            break;
-          } else {
-            day--;
-            hour = 23;
-            min = 59;
-          }
-        } else {
-          hour--;
-          min = 59;
-        }
-      } else {
-        min--;
-      }
-
-      // Cập nhật hiển thị trên LCD
-      updateDisplayTimeToHatch(day, hour, min);
-      updateDisplayTemp();
-      tempAdjusting();
-    }
-  }
-}
-*/
 uint8_t processInputState(String input) {
   input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
   if (input.indexOf("prState") != -1) {
@@ -164,7 +115,7 @@ void loop() {
   uint8_t hour;
   uint8_t min;
   uint8_t state = 0;
-
+ // uint8_t setTemp = 30;
   if (Serial.available()) {
     String input = Serial.readString();
     input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
@@ -189,6 +140,11 @@ void loop() {
     if (input.startsWith("prState")) {
       int prStateIndex = input.indexOf("prState") + 7;
       state = input.substring(prStateIndex).toInt();
+    }
+  if (input.startsWith("setTemp")) {
+      int setTempIndex = input.indexOf("setTemp") + 7;
+      setTemp = input.substring(setTempIndex).toInt();
+      tempAdjusting();
     }
 
     unsigned long previousMillis = millis();
@@ -246,4 +202,5 @@ void loop() {
     Serial.print("state");
     Serial.print(state);
   }
+  delay(500);
 }

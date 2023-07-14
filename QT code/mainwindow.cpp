@@ -258,3 +258,10 @@ void MainWindow::on_pushButtonContinue_clicked()
 
 }
 
+
+void MainWindow::on_pushButtonSetTemp_clicked()
+{
+    procSerial->comserial::sendDataToPort(ui->spinBoxSetTemp->value(),"setTemp");
+
+}
+
