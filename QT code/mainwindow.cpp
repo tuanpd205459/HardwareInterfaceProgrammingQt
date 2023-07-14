@@ -208,33 +208,6 @@ void MainWindow::on_pushButtonTurnOff_clicked()
 }
 
 
-void MainWindow::on_pushButtonSet_clicked()
-{
-    if (devserial->isOpen() && devserial->isWritable()) {
-        // Đọc giá trị từ doubleSpinBox
-
-        double setTemperature = ui->doubleSpinBoxTemperature->value();
-
-                // Chuyển đổi giá trị sang QString
-                QString dataToSend = "SetTemperature " + QString::number(setTemperature);
-
-        // Chuyển đổi QString sang QByteArray
-        QByteArray sendData = dataToSend.toUtf8();
-
-        // Gửi dữ liệu xuống Arduino
-        qint64 bytesWritten = devserial->write(sendData);
-        qDebug() << "Send Data: " << sendData;
-
-        if (bytesWritten == -1) {
-            // Xử lý lỗi: Không gửi được dữ liệu
-            qDebug() << "Error writing data to serial port";
-        } else if (bytesWritten < sendData.size()) {
-            // Xử lý lỗi: Chưa gửi được
-
-        }
-    }
-
-}
 
 
 void MainWindow::on_pushButtonTurnOffSpeaker_clicked()
@@ -275,6 +248,13 @@ void MainWindow::on_pushButtonStartHatch_clicked()
 
 void MainWindow::on_pushButtonStopHatch_clicked()
 {
+    procSerial->comserial::sendDataToPort(0,"prState");
+}
+
+
+void MainWindow::on_pushButtonContinue_clicked()
+{
+    procSerial->comserial::sendDataToPort(1,"prState");
 
 }
 
