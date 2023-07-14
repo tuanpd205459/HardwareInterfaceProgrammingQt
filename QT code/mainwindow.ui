@@ -760,6 +760,19 @@
      <string>Set Temp</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButtonTurnOffBuzzer">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>520</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Tat coi</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

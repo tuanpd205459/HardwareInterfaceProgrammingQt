@@ -46,6 +46,8 @@ private slots:
 
     void on_pushButtonSetTemp_clicked();
 
+    void on_pushButtonTurnOffBuzzer_clicked();
+
 private:
     Ui::MainWindow *ui;
     QSerialPort *devserial;

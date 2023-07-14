@@ -265,3 +265,9 @@ void MainWindow::on_pushButtonSetTemp_clicked()
 
 }
 
+
+void MainWindow::on_pushButtonTurnOffBuzzer_clicked()
+{
+    procSerial->comserial::sendDataToPort(3,"prState");
+}
+
