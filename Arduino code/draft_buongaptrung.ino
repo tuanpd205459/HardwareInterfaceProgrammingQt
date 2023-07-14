@@ -11,37 +11,25 @@ LiquidCrystal_I2C lcd(I2C_ADDR, LCD_COLUMNS, LCD_LINES);
 #define DHTTYPE DHT11   // Loại cảm biến DHT
 
 const int redLed = 13;       // Chân đèn LED kết nối với chân 13 trên Arduino
-const int greenLed = 7;
 const int buzzer = 12;   // Chân còi kết nối với chân 12 trên Arduino
-const int middleButton = 9; 
-const int rightButton = 10;
-const int leftButton = 8;
 
 DHT dht(DHTPIN, DHTTYPE);
 
-//Timer counter to start
-static uint8_t hourTimeToStart;
-static uint8_t minTimeToStart;
-
-// Duration of hatching
+// Thời gian ấp trứng
 static uint8_t dayTimeToHatch;
 static uint8_t hourTimeToHatch;
 static uint8_t minTimeToHatch;
-static uint8_t dayHatch;
-static uint8_t hourHatch;
-static uint8_t minHatch;
 
-// Temp 
+// Nhiệt độ ấp trứng
 static uint8_t tempHatch;
 static float currentTemp; // currentTemp = dht.readTemperature()
 
-// Process state [0]: waiting, [1]: hatching, [2]: hatched.
+// Trạng thái quá trình [0]: chờ, [1]: ấp, [2]: tiếp tục, [3]: đã nở.
 static uint8_t prState = 0;
 
-#define millisWaiting   1000              // 1s
-#define millisHatching  1000              // 1s
-#define millisBuzzer    1000*5            // 5s
-#define millisAlarm     1000*25           // 25s
+#define millisWaiting   1000    // 1 giây
+#define millisHatching  1000    // 1 giây
+#define millisBuzzer    1000*5  // 5 giây
 
 void updateDisplayTimeToHatch(uint8_t day, uint8_t hour, uint8_t min){
   lcd.setCursor(6, 2);
@@ -79,14 +67,40 @@ void updateDisplayTemp(){
   else
     lcd.print((uint8_t)dht.readTemperature());
 }
+
+void tempAdjusting() {
+  currentTemp = dht.readTemperature();
+
+  if (currentTemp >= tempHatch + 1) {
+    digitalWrite(redLed, LOW);
+  } else if (currentTemp <= tempHatch - 1) {
+    digitalWrite(redLed, HIGH);
+  }
+}
+
+void sendData_th() {
+  float currentTemp = dht.readTemperature();
+  float currentHumidity = dht.readHumidity();
+  
+  if (isnan(currentTemp) || isnan(currentHumidity)) {
+    Serial.println("Failed to read from DHT");
+  } else {
+    Serial.println(currentTemp);
+    Serial.println(currentHumidity);
+  }
+}
+
 void countDownToHatch(int prState, int day, int hour, int min) {
   unsigned long previousMillis = millis();
   unsigned long interval = 1000; // Đơn vị milliseconds (1 giây)
  
-  while (prState == 1) {
-    if (Serial.available() && prState ==0) {
-      // Dừng đếm ngược nếu nhận được tín hiệu 1 từ Serial port
-      break;
+  while (prState == 1 || prState ==2) {
+    if (Serial.available()) {
+      String inputState = Serial.readString();
+      int state = processInputState(inputState);
+      if (state == 0) {
+        break;
+      }
     }
 
     unsigned long currentMillis = millis();
@@ -122,36 +136,17 @@ void countDownToHatch(int prState, int day, int hour, int min) {
       updateDisplayTemp();
       tempAdjusting();
     }
-
-    if (prState == 0) {
-      // Dừng đếm thời gian khi state = 0
-
-      return;
-    }
   }
 }
 
-
-void tempAdjusting() {
-  currentTemp = dht.readTemperature();
-
-  if (currentTemp >= tempHatch + 1) {
-    digitalWrite(redLed, LOW);
-  } else if (currentTemp <= tempHatch - 1) {
-    digitalWrite(redLed, HIGH);
+uint8_t processInputState(String input) {
+  input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
+  if (input.indexOf("prState") != -1) {
+    int prStateIndex = input.indexOf("prState") + 7;
+    uint8_t state = input.substring(prStateIndex).toInt();
+    return state;
   }
-}
-
-void sendData_th() {
-  float currentTemp = dht.readTemperature();
-  float currentHumidity = dht.readHumidity();
-  
-  if (isnan(currentTemp) || isnan(currentHumidity)) {
-    Serial.println("Failed to read from DHT");
-  } else {
-    Serial.println(currentTemp);
-    Serial.println(currentHumidity);
-  }
+  return 1; // Mặc định trạng thái 1 nếu không nhận được tín hiệu dừng
 }
 
 void setup() {
@@ -161,16 +156,13 @@ void setup() {
   dht.begin();
 
   pinMode(redLed, OUTPUT);
-  pinMode(greenLed, OUTPUT);
   pinMode(buzzer, OUTPUT);
-  pinMode(middleButton, INPUT_PULLUP);
-  pinMode(rightButton, INPUT_PULLUP);
-  pinMode(leftButton, INPUT_PULLUP);
 }
 
 void loop() {
   sendData_th();
-  if (Serial.available()) {
+
+if (Serial.available()) {
     String input = Serial.readString();
     input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
     //tachs chuoi
@@ -188,21 +180,20 @@ uint8_t state = input.substring(prStateIndex).toInt();
 Serial.println(dayTime);
 Serial.println(hourTime);
 Serial.println(minuteTime);
-Serial.println(state);
-//update man hinh LCD
-      if (state == 1) {
+Serial.println(state); 
+
+ if (state == 1) {
         updateDisplayTimeToHatch(dayTime, hourTime, minuteTime);
         countDownToHatch(state, dayTime, hourTime, minuteTime);
       }
-     else if (state == 0) {
-        // Dừng đếm ngay lập tức
+ 
+ else if(state == 2){
         updateDisplayTimeToHatch(dayTime, hourTime, minuteTime);
-        
+        countDownToHatch(state, dayTime, hourTime, minuteTime);
 
-      }
-
-    }
+ }
+        }
   }
-
   delay(1000);
-}
+
+  }
