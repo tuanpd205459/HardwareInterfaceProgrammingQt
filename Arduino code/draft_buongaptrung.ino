@@ -146,7 +146,6 @@ uint8_t processInputState(String input) {
     uint8_t state = input.substring(prStateIndex).toInt();
     return state;
   }
-  return 1; // Mặc định trạng thái 1 nếu không nhận được tín hiệu dừng
 }
 
 void setup() {
@@ -160,81 +159,91 @@ void setup() {
 }
 
 void loop() {
-  sendData_th();
+  // sendData_th();
+  uint8_t day;
+  uint8_t hour;
+  uint8_t min;
+  uint8_t state = 0;
 
-if (Serial.available()) {
+  if (Serial.available()) {
     String input = Serial.readString();
     input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
-    //tachs chuoi
-    if (input.startsWith("dayTimeToHatch") && input.indexOf("hourTimeToHatch") != -1 &&
-        input.indexOf("minuteTimeToHatch") != -1 && input.indexOf("prState") != -1) {
+
+    if (input.startsWith("dayTimeToHatch")) {
       int dayTimeIndex = input.indexOf("dayTimeToHatch") + 14;
       int hourTimeIndex = input.indexOf("hourTimeToHatch") + 15;
       int minuteTimeIndex = input.indexOf("minuteTimeToHatch") + 17;
       int prStateIndex = input.indexOf("prState") + 7;
 
-uint8_t day = input.substring(dayTimeIndex, hourTimeIndex).toInt();
-uint8_t hour = input.substring(hourTimeIndex, minuteTimeIndex).toInt();
-uint8_t min = input.substring(minuteTimeIndex, prStateIndex).toInt();
-uint8_t state = input.substring(prStateIndex).toInt();
+      day = input.substring(dayTimeIndex, hourTimeIndex).toInt();
+      hour = input.substring(hourTimeIndex, minuteTimeIndex).toInt();
+      min = input.substring(minuteTimeIndex, prStateIndex).toInt();
+      state = input.substring(prStateIndex).toInt();
 
-Serial.println(day);
-Serial.println(hour);
-Serial.println(min);
-Serial.println(state); 
+      Serial.println(day);
+      Serial.println(hour);
+      Serial.println(min);
+      Serial.println(state);
+    }
 
-if(processInputState(input)==1){
-  state = 1;
-}
-unsigned long previousMillis = millis();
-  unsigned long interval = 1000; // Đơn vị milliseconds (1 giây)
- 
-  while (state == 1) {
-    if (Serial.available()) {
-      String inputState = Serial.readString();
-      int state = processInputState(inputState);
-      if (state == 0) {
-        break;
+    if (input.startsWith("prState")) {
+      int prStateIndex = input.indexOf("prState") + 7;
+      state = input.substring(prStateIndex).toInt();
+    }
+
+    unsigned long previousMillis = millis();
+    unsigned long interval = 1000; // Đơn vị milliseconds (1 giây)
+
+    while (state == 1) {
+      if (Serial.available()) {
+        String inputState = Serial.readString();
+        state = processInputState(inputState);
+        if (state == 0) {
+          Serial.print(day);
+          Serial.print(hour);
+          Serial.print(min);
+          Serial.print(state);
+          break;
+        }
       }
-    }
+      unsigned long currentMillis = millis();
 
-    unsigned long currentMillis = millis();
+      if (currentMillis % 2000 == 0) {
+        // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 2 giây
+        // sendData_th();
+      }
+      if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
 
-    if (currentMillis % 2000 == 0) {
-      // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 2 giây
-      sendData_th();
-    }
-
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-
-      if (min == 0) {
-        if (hour == 0) {
-          if (day == 0) {
-            prState = 2;
-            break;
+        if (min == 0) {
+          if (hour == 0) {
+            if (day == 0) {
+              prState = 2;
+              break;
+            } else {
+              day--;
+              hour = 23;
+              min = 59;
+            }
           } else {
-            day--;
-            hour = 23;
+            hour--;
             min = 59;
           }
         } else {
-          hour--;
-          min = 59;
+          min--;
         }
-      } else {
-        min--;
+
+        // Cập nhật hiển thị trên LCD
+        updateDisplayTimeToHatch(day, hour, min);
+        updateDisplayTemp();
+        tempAdjusting();
       }
-
-      // Cập nhật hiển thị trên LCD
-      updateDisplayTimeToHatch(day, hour, min);
-      updateDisplayTemp();
-      tempAdjusting();
     }
-  }
 
- }
+    Serial.print(day);
+    Serial.print(hour);
+    Serial.print(min);
+    Serial.print("state");
+    Serial.print(state);
+  }
 }
-  delay(1000);
-
-  }
