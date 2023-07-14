@@ -89,7 +89,7 @@ void sendData_th() {
     Serial.println(currentHumidity);
   }
 }
-
+/*
 void countDownToHatch(int prState, int day, int hour, int min) {
   unsigned long previousMillis = millis();
   unsigned long interval = 1000; // Đơn vị milliseconds (1 giây)
@@ -138,7 +138,7 @@ void countDownToHatch(int prState, int day, int hour, int min) {
     }
   }
 }
-
+*/
 uint8_t processInputState(String input) {
   input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
   if (input.indexOf("prState") != -1) {
@@ -173,27 +173,68 @@ if (Serial.available()) {
       int minuteTimeIndex = input.indexOf("minuteTimeToHatch") + 17;
       int prStateIndex = input.indexOf("prState") + 7;
 
-uint8_t dayTime = input.substring(dayTimeIndex, hourTimeIndex).toInt();
-uint8_t hourTime = input.substring(hourTimeIndex, minuteTimeIndex).toInt();
-uint8_t minuteTime = input.substring(minuteTimeIndex, prStateIndex).toInt();
+uint8_t day = input.substring(dayTimeIndex, hourTimeIndex).toInt();
+uint8_t hour = input.substring(hourTimeIndex, minuteTimeIndex).toInt();
+uint8_t min = input.substring(minuteTimeIndex, prStateIndex).toInt();
 uint8_t state = input.substring(prStateIndex).toInt();
-Serial.println(dayTime);
-Serial.println(hourTime);
-Serial.println(minuteTime);
+
+Serial.println(day);
+Serial.println(hour);
+Serial.println(min);
 Serial.println(state); 
 
- if (state == 1) {
-        updateDisplayTimeToHatch(dayTime, hourTime, minuteTime);
-        countDownToHatch(state, dayTime, hourTime, minuteTime);
-      }
+if(processInputState(input)==1){
+  state = 1;
+}
+unsigned long previousMillis = millis();
+  unsigned long interval = 1000; // Đơn vị milliseconds (1 giây)
  
- else if(state == 2){
-        updateDisplayTimeToHatch(dayTime, hourTime, minuteTime);
-        countDownToHatch(state, dayTime, hourTime, minuteTime);
+  while (state == 1) {
+    if (Serial.available()) {
+      String inputState = Serial.readString();
+      int state = processInputState(inputState);
+      if (state == 0) {
+        break;
+      }
+    }
+
+    unsigned long currentMillis = millis();
+
+    if (currentMillis % 2000 == 0) {
+      // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 2 giây
+      sendData_th();
+    }
+
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+
+      if (min == 0) {
+        if (hour == 0) {
+          if (day == 0) {
+            prState = 2;
+            break;
+          } else {
+            day--;
+            hour = 23;
+            min = 59;
+          }
+        } else {
+          hour--;
+          min = 59;
+        }
+      } else {
+        min--;
+      }
+
+      // Cập nhật hiển thị trên LCD
+      updateDisplayTimeToHatch(day, hour, min);
+      updateDisplayTemp();
+      tempAdjusting();
+    }
+  }
 
  }
-        }
-  }
+}
   delay(1000);
 
   }
