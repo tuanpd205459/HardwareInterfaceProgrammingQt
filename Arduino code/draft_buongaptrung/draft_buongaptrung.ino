@@ -27,6 +27,9 @@ static float currentTemp; // currentTemp = dht.readTemperature()
 // Trạng thái quá trình [0]: chờ, [1]: ấp, [2]: tiếp tục, [3]: set time hatch.
 static uint8_t prState = 0;
 
+  uint8_t state = 0;
+
+
 #define millisWaiting   1000    // 1 giây
 #define millisHatching  1000    // 1 giây
 #define millisBuzzer    1000*5  // 5 giây
@@ -89,15 +92,23 @@ void sendData_th() {
     Serial.println(currentHumidity);
   }
 }
-
 uint8_t processInputState(String input) {
   input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
-  if (input.indexOf("prState") != -1) {
+  
+  if (input.startsWith("setTemp")) {
+    int setTempIndex = input.indexOf("setTemp") + 7;
+    setTemp = input.substring(setTempIndex).toInt();
+    state =1;
+    return state; // Trả về giá trị trạng thái hiện tại
+  }
+
+  if (input.startsWith("prState")) {
     int prStateIndex = input.indexOf("prState") + 7;
-    uint8_t state = input.substring(prStateIndex).toInt();
+   state = input.substring(prStateIndex).toInt();
     return state;
   }
 }
+
 
 void setup() {
   Serial.begin(9600);
@@ -114,7 +125,6 @@ void loop() {
   uint8_t day;
   uint8_t hour;
   uint8_t min;
-  uint8_t state = 0;
  // uint8_t setTemp = 30;
   if (Serial.available()) {
     String input = Serial.readString();
@@ -141,9 +151,10 @@ void loop() {
       int prStateIndex = input.indexOf("prState") + 7;
       state = input.substring(prStateIndex).toInt();
     }
+
   if (input.startsWith("setTemp")) {
-      int setTempIndex = input.indexOf("setTemp") + 7;
-      setTemp = input.substring(setTempIndex).toInt();
+  //    String inputSetTemp = Serial.readString();
+      state = processInputState(input);
       tempAdjusting();
     }
 
@@ -154,6 +165,7 @@ void loop() {
       if (Serial.available()) {
         String inputState = Serial.readString();
         state = processInputState(inputState);
+    }
         if (state == 0) {
           Serial.print(day);
           Serial.print(hour);
@@ -161,7 +173,8 @@ void loop() {
           Serial.print(state);
           break;
         }
-      }
+      
+
       unsigned long currentMillis = millis();
 
       if (currentMillis % 2000 == 0) {
@@ -195,12 +208,12 @@ void loop() {
         tempAdjusting();
       }
     }
-
+}
     Serial.print(day);
     Serial.print(hour);
     Serial.print(min);
     Serial.print("state");
     Serial.print(state);
-  }
+  
   delay(500);
 }
