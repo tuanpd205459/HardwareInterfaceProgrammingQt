@@ -131,7 +131,7 @@ void loop() {
   uint8_t day;
   uint8_t hour;
   uint8_t min;
-
+   uint8_t resetStatus = 0;
   if (Serial.available()) {
     String input = Serial.readString();
     input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
@@ -152,6 +152,14 @@ void loop() {
       int prStateIndex = input.indexOf("prState") + 7;
       state = input.substring(prStateIndex).toInt();
     }
+    if (input.startsWith("Reset")) {
+      day =0;
+      hour = 0;
+      min =0;
+        updateDisplayTimeToHatch(day, hour, min);
+        updateDisplayTemp();
+        tempAdjusting();
+    }
 
     if (input.startsWith("setTemp")) {
       state = processInputState(input);
@@ -165,8 +173,15 @@ void loop() {
       if (Serial.available()) {
         String inputState = Serial.readString();
         state = processInputState(inputState);
+        if(inputState.startsWith("Reset")) resetStatus =1;
       }
-      if (state == 0) {
+      if(resetStatus){
+          updateDisplayTimeToHatch(0, 0, 0);
+        updateDisplayTemp();
+        tempAdjusting();
+        break;
+      }
+      if (state == 0) {   
         break;
       }
 
@@ -211,8 +226,7 @@ void loop() {
     }
   }
 
+  
 
-
-
-  delay(3000);
+delay(3000);
 }
