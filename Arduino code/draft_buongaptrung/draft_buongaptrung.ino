@@ -11,7 +11,7 @@ LiquidCrystal_I2C lcd(I2C_ADDR, LCD_COLUMNS, LCD_LINES);
 #define DHTTYPE DHT11   // Loại cảm biến DHT
 
 const int redLed = 13;       // Chân đèn LED kết nối với chân 13 trên Arduino
-const int buzzer = 12;   // Chân còi kết nối với chân 12 trên Arduino
+const int buzzerPin = 12;   // Chân buzzer kết nối với chân 12 trên Arduino
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -27,21 +27,21 @@ static float currentTemp; // currentTemp = dht.readTemperature()
 // Trạng thái quá trình [0]: chờ, [1]: ấp, [2]: tiếp tục, [3]: set time hatch.
 static uint8_t prState = 0;
 
-  uint8_t state = 0;
+uint8_t state = 0;
 
+#define millisWaiting   1000              // 1s
+#define millisHatching  1000              // 1s
+#define millisBuzzer    1000*5            // 5s
+#define millisAlarm     1000*25           // 25s
 
-#define millisWaiting   1000    // 1 giây
-#define millisHatching  1000    // 1 giây
-#define millisBuzzer    1000*5  // 5 giây
-
-void updateDisplayTimeToHatch(uint8_t day, uint8_t hour, uint8_t min){
+void updateDisplayTimeToHatch(uint8_t day, uint8_t hour, uint8_t min) {
   lcd.setCursor(6, 2);
   lcd.print("TimeHatch");
   lcd.setCursor(6, 3);
   if (day <= 9) {
     lcd.print("0");
     lcd.setCursor(7, 3);
-  } 
+  }
   lcd.print(day);
   lcd.setCursor(8, 3);
   lcd.print(":");
@@ -49,7 +49,7 @@ void updateDisplayTimeToHatch(uint8_t day, uint8_t hour, uint8_t min){
   if (hour <= 9) {
     lcd.print("0");
     lcd.setCursor(10, 3);
-  } 
+  }
   lcd.print(hour);
   lcd.setCursor(11, 3);
   lcd.print(":");
@@ -57,11 +57,11 @@ void updateDisplayTimeToHatch(uint8_t day, uint8_t hour, uint8_t min){
   if (min <= 9) {
     lcd.print("0");
     lcd.setCursor(13, 3);
-  } 
+  }
   lcd.print(min);
 }
 
-void updateDisplayTemp(){
+void updateDisplayTemp() {
   lcd.setCursor(16, 2);
   lcd.print("Temp");
   lcd.setCursor(17, 3);
@@ -84,7 +84,7 @@ void tempAdjusting() {
 void sendData_th() {
   float currentTemp = dht.readTemperature();
   float currentHumidity = dht.readHumidity();
-  
+
   if (isnan(currentTemp) || isnan(currentHumidity)) {
     Serial.println("Failed to read from DHT");
   } else {
@@ -92,20 +92,46 @@ void sendData_th() {
     Serial.println(currentHumidity);
   }
 }
+
 uint8_t processInputState(String input) {
   input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
-  
+
   if (input.startsWith("setTemp")) {
     int setTempIndex = input.indexOf("setTemp") + 7;
     setTemp = input.substring(setTempIndex).toInt();
-    state =1;
+    state = 1;
     return state; // Trả về giá trị trạng thái hiện tại
   }
 
   if (input.startsWith("prState")) {
     int prStateIndex = input.indexOf("prState") + 7;
-   state = input.substring(prStateIndex).toInt();
+    state = input.substring(prStateIndex).toInt();
     return state;
+  }
+}
+
+void ringBuzzer() {
+  const unsigned long buzzerInterval = 10 * 1000; // Thời gian chờ giữa các lần bật chuông (5 phút)
+  const unsigned long buzzerDuration = 2 * 1000; // Thời gian chuông báo kéo dài (10 giây)
+
+  static unsigned long previousBuzzerTime = 0; // Thời điểm lần cuối bật chuông
+  static bool isBuzzerOn = false; // Trạng thái bật/tắt chuông
+
+  unsigned long currentMillis = millis();
+
+  // Kiểm tra điều kiện bật chuông
+  if (!isBuzzerOn && currentMillis - previousBuzzerTime >= buzzerInterval) {
+    // Bật chuông
+    tone(buzzerPin, 100); // Tạo tín hiệu âm thanh với tần số 100Hz
+    isBuzzerOn = true;
+    previousBuzzerTime = currentMillis;
+  }
+
+  // Kiểm tra điều kiện tắt chuông
+  if (isBuzzerOn && currentMillis - previousBuzzerTime >= buzzerDuration) {
+    // Tắt chuông
+    noTone(buzzerPin); // Tắt tín hiệu âm thanh
+    isBuzzerOn = false;
   }
 }
 
@@ -117,15 +143,16 @@ void setup() {
   dht.begin();
 
   pinMode(redLed, OUTPUT);
-  pinMode(buzzer, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
 }
 
 void loop() {
+
   // sendData_th();
   uint8_t day;
   uint8_t hour;
   uint8_t min;
- // uint8_t setTemp = 30;
+  int turnOffBuzzer = 0;
   if (Serial.available()) {
     String input = Serial.readString();
     input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
@@ -152,8 +179,7 @@ void loop() {
       state = input.substring(prStateIndex).toInt();
     }
 
-  if (input.startsWith("setTemp")) {
-  //    String inputSetTemp = Serial.readString();
+    if (input.startsWith("setTemp")) {
       state = processInputState(input);
       tempAdjusting();
     }
@@ -165,15 +191,14 @@ void loop() {
       if (Serial.available()) {
         String inputState = Serial.readString();
         state = processInputState(inputState);
-    }
-        if (state == 0) {
-          Serial.print(day);
-          Serial.print(hour);
-          Serial.print(min);
-          Serial.print(state);
-          break;
-        }
-      
+      }
+      if (state == 0) {
+        Serial.print(day);
+        Serial.print(hour);
+        Serial.print(min);
+        Serial.print(state);
+        break;
+      }
 
       unsigned long currentMillis = millis();
 
@@ -187,7 +212,7 @@ void loop() {
         if (min == 0) {
           if (hour == 0) {
             if (day == 0) {
-              prState = 2;
+              state = 2;
               break;
             } else {
               day--;
@@ -208,12 +233,36 @@ void loop() {
         tempAdjusting();
       }
     }
+  }
+  Serial.print(day);
+  Serial.print(hour);
+  Serial.print(min);
+  Serial.print("state");
+  Serial.print(state);
+
+if (state == 2 && turnOffBuzzer == 0) {
+  bool stopBuzzer = 0;
+
+  while (turnOffBuzzer == 0 && stopBuzzer ==0) {
+    ringBuzzer();
+    delay(500);
+
+    if (Serial.available()) {
+      String inputTurnBuzzer = Serial.readString();
+      inputTurnBuzzer.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
+
+      if (inputTurnBuzzer.startsWith("TurnOffBuzzer")) {
+        turnOffBuzzer = 1; // Cập nhật giá trị của turnOffBuzzer
+        stopBuzzer = 1;
+        Serial.print("buzzer");
+        Serial.println(stopBuzzer);
+      }
+    }
+  }
 }
-    Serial.print(day);
-    Serial.print(hour);
-    Serial.print(min);
-    Serial.print("state");
-    Serial.print(state);
-  
+
+
+
+
   delay(500);
 }
