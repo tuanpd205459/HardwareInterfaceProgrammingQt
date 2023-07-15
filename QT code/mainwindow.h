@@ -29,6 +29,10 @@ private slots:
     void on_pushButtonDisconnect_clicked();
     void updateTemperature(QString sensor_reading);
     void updateHumidity(QString sersor_reading);
+    void dayHatch(QString sersor_reading);
+    void hourHatch(QString sersor_reading);
+    void minHatch(QString sersor_reading);
+
     void readSerial();
   //  void sendData(QString data);
     void on_pushButtonTurnOn_clicked();

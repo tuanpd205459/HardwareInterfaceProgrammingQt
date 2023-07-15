@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
           serialBuffer = "";
           parsed_data = "";
           temperature_value = "";
-            humidity_value ="";
+          humidity_value ="";
 
 
       QStringList DispSeriais = procSerial->ConnectDevices();
@@ -124,8 +124,23 @@ void MainWindow::updateHumidity(QString sensor_reading)
     //  update the value displayed on the lcdNumber
     ui->lcdNumberHumidity->display(sensor_reading);
 }
+void MainWindow::dayHatch(QString sensor_reading)
+{
+    //  update the value displayed on the lcdNumber
+    ui->lcdNumberDayHatch->display(sensor_reading);
+}
+void MainWindow::hourHatch(QString sensor_reading)
+{
+    //  update the value displayed on the lcdNumber
+    ui->lcdNumberHourHatch->display(sensor_reading);
+}
+void MainWindow::minHatch(QString sensor_reading)
+{
+    //  update the value displayed on the lcdNumber
+    ui->lcdNumberMinHatch->display(sensor_reading);
+}
 
-
+/*
 void MainWindow::readSerial()
 {
 
@@ -156,8 +171,53 @@ void MainWindow::readSerial()
 
 }
 
+*/
+void MainWindow::readSerial()
+{
+    QByteArray serialData = devserial->readAll(); // Đọc dữ liệu từ cổng serial
+    serialBuffer = serialBuffer + QString::fromStdString(serialData.toStdString());
+    qDebug() << "dữ liệu nhận được: " << serialBuffer;
+// Kiểm tra điều kiện kết thúc
+    if (serialBuffer.endsWith("\n")) {
+        // Xử lý dữ liệu đã đọc
+        QStringList values = serialBuffer.split(',');
+
+        if (values.size() >=2 ) {
+            QString temperature1 = values[0];
+            QString humidity1 = values[1];
+
+/*
+            if (values.size() >= 4) {
+                QString temperature2 = values[2];
+                QString humidity2 = values[3];
+                MainWindow::updateTemperature(temperature2);
+                MainWindow::updateHumidity(humidity2);
+            }
+*/
+            if (values.size() >= 5) {
+                QString value1 = values[2];
+                QString value2 = values[3];
+                QString value3 = values[4];
+                MainWindow::dayHatch(value1);
+                MainWindow::hourHatch(value2);
+                MainWindow::minHatch(value3);
 
 
+            }
+            MainWindow::updateTemperature(temperature1);
+            MainWindow::updateHumidity(humidity1);
+
+
+        } else {
+            // Xử lý lỗi hoặc thông báo không đủ phần tử trong chuỗi đầu vào
+            qDebug() << "Lỗi: Không đủ phần tử trong chuỗi đầu vào.";
+        }
+
+
+    // Xóa serialBuffer để chuẩn bị cho lần đọc tiếp theo
+    serialBuffer.clear();
+}
+}
 void MainWindow::on_pushButtonTurnOn_clicked()
 {
     if (devserial->isOpen() && devserial->isWritable()) {
