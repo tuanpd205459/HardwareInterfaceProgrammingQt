@@ -88,8 +88,11 @@ void sendData_th() {
   if (isnan(currentTemp) || isnan(currentHumidity)) {
     Serial.println("Failed to read from DHT");
   } else {
-    Serial.println(currentTemp);
-    Serial.println(currentHumidity);
+    Serial.print(currentTemp);
+    Serial.print(",");
+    Serial.print(currentHumidity);
+    Serial.print(",");
+
   }
 }
 
@@ -110,31 +113,6 @@ uint8_t processInputState(String input) {
   }
 }
 
-void ringBuzzer() {
-  const unsigned long buzzerInterval = 10 * 1000; // Thời gian chờ giữa các lần bật chuông (5 phút)
-  const unsigned long buzzerDuration = 2 * 1000; // Thời gian chuông báo kéo dài (10 giây)
-
-  static unsigned long previousBuzzerTime = 0; // Thời điểm lần cuối bật chuông
-  static bool isBuzzerOn = false; // Trạng thái bật/tắt chuông
-
-  unsigned long currentMillis = millis();
-
-  // Kiểm tra điều kiện bật chuông
-  if (!isBuzzerOn && currentMillis - previousBuzzerTime >= buzzerInterval) {
-    // Bật chuông
-    tone(buzzerPin, 100); // Tạo tín hiệu âm thanh với tần số 100Hz
-    isBuzzerOn = true;
-    previousBuzzerTime = currentMillis;
-  }
-
-  // Kiểm tra điều kiện tắt chuông
-  if (isBuzzerOn && currentMillis - previousBuzzerTime >= buzzerDuration) {
-    // Tắt chuông
-    noTone(buzzerPin); // Tắt tín hiệu âm thanh
-    isBuzzerOn = false;
-  }
-}
-
 
 void setup() {
   Serial.begin(9600);
@@ -148,11 +126,12 @@ void setup() {
 
 void loop() {
 
-  // sendData_th();
+   sendData_th();
+   Serial.println();
   uint8_t day;
   uint8_t hour;
   uint8_t min;
-  int turnOffBuzzer = 0;
+
   if (Serial.available()) {
     String input = Serial.readString();
     input.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
@@ -167,11 +146,6 @@ void loop() {
       hour = input.substring(hourTimeIndex, minuteTimeIndex).toInt();
       min = input.substring(minuteTimeIndex, prStateIndex).toInt();
       state = input.substring(prStateIndex).toInt();
-
-      Serial.println(day);
-      Serial.println(hour);
-      Serial.println(min);
-      Serial.println(state);
     }
 
     if (input.startsWith("prState")) {
@@ -193,19 +167,15 @@ void loop() {
         state = processInputState(inputState);
       }
       if (state == 0) {
-        Serial.print(day);
-        Serial.print(hour);
-        Serial.print(min);
-        Serial.print(state);
         break;
       }
 
       unsigned long currentMillis = millis();
 
-      if (currentMillis % 2000 == 0) {
+      
         // Gửi tín hiệu nhiệt độ và độ ẩm về Qt liên tục sau mỗi 2 giây
-        // sendData_th();
-      }
+       sendData_th();
+      
       if (currentMillis - previousMillis >= interval) {
         previousMillis = currentMillis;
 
@@ -231,38 +201,18 @@ void loop() {
         updateDisplayTimeToHatch(day, hour, min);
         updateDisplayTemp();
         tempAdjusting();
+    Serial.print(day);
+    Serial.print(",");
+    Serial.print(hour);
+    Serial.print(",");
+    Serial.println(min);
+    delay(2000);
       }
     }
   }
-  Serial.print(day);
-  Serial.print(hour);
-  Serial.print(min);
-  Serial.print("state");
-  Serial.print(state);
-
-if (state == 2 && turnOffBuzzer == 0) {
-  uint8_t  stopBuzzer = 0;
-
-  while (turnOffBuzzer == 0 && stopBuzzer ==0) {
-    ringBuzzer();
-    delay(500);
-
-    if (Serial.available()) {
-      String inputTurnBuzzer = Serial.readString();
-      inputTurnBuzzer.trim(); // Loại bỏ khoảng trắng đầu và cuối chuỗi
-
-      if (inputTurnBuzzer.startsWith("TurnOffBuzzer")) {
-        turnOffBuzzer = 1; // Cập nhật giá trị của turnOffBuzzer
-        stopBuzzer = 1;
-        Serial.print("buzzer");
-        Serial.println(stopBuzzer);
-      }
-    }
-  }
-}
 
 
 
 
-  delay(500);
+  delay(3000);
 }
